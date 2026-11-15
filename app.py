@@ -15,80 +15,71 @@ st.set_page_config(page_title="Chicago Food Inspections", page_icon="🍽️", l
 
 DATA_PATH = Path(__file__).parent / "inspections.parquet"
 SOURCE_URL = "https://catalog.data.gov/dataset/food-inspections"
-MAP_STYLE = os.environ.get("MAP_STYLE", "carto-darkmatter")
+MAP_STYLE = os.environ.get("MAP_STYLE", "carto-positron")
 
-# Colours for the dark theme. One fixed colour per entity, used the same way everywhere.
-PASS, CONDITIONS, FAIL = "#3987e5", "#199e70", "#d95926"
-INK, INK_2, INK_3 = "#e6edf7", "#a9b8cf", "#7d8ba3"
-GOOD, BAD = "#3ecf8e", "#ff7b72"
+# Colours (light theme). One fixed colour per entity, used the same way everywhere.
+PASS, CONDITIONS, FAIL = "#2a78d6", "#1baf7a", "#eb6834"
+INK, INK_2, INK_3 = "#1a2433", "#52514e", "#6b6a66"
+YELLOW = "#eda100"
+GOOD, BAD = "#1a7f37", "#cf222e"
 RESULT_COLOURS = {"Pass": PASS, "Pass w/ Conditions": CONDITIONS, "Fail": FAIL}
 INSPECTED = ["Pass", "Pass w/ Conditions", "Fail"]
 NOT_INSPECTED = ["Out of Business", "No Entry", "Not Ready", "Business Not Located"]
 RISK_ORDER = ["Risk 1 (High)", "Risk 2 (Medium)", "Risk 3 (Low)"]
-SEQ_BLUE = ["#184f95", "#256abf", "#3987e5", "#6da7ec", "#b7d3f6"]
+SEQ_BLUE = ["#86b6ef", "#3987e5", "#1c5cab", "#0d366b"]
 
 # ---------------------------------------------------------------- styling
 st.markdown(
     f"""
 <style>
-  .stApp {{ background: radial-gradient(1200px 600px at 20% -10%, #13264a 0%, #0b1426 55%, #08101f 100%); }}
-  [data-testid="stSidebar"] {{ background: linear-gradient(180deg, #0f1d38 0%, #0a1528 100%);
-                                border-right: 1px solid rgba(120,160,220,0.15); }}
-  [data-testid="stHeader"] {{ background: transparent; }}
   .block-container {{ padding-top: 2.2rem; max-width: 1400px; }}
 
   .hero {{ display:flex; gap:1.4rem; align-items:flex-start; padding:1.6rem 1.8rem; border-radius:18px;
-           background: linear-gradient(135deg, #123a78 0%, #0f2c5c 45%, #0c1f42 100%);
-           border:1px solid rgba(110,170,255,0.35); box-shadow: 0 10px 40px rgba(20,80,180,0.25); margin-bottom:1.3rem; }}
+           background: linear-gradient(135deg, #1c5cab 0%, #2a78d6 55%, #3f8ee8 100%);
+           box-shadow: 0 10px 30px rgba(42,120,214,0.25); margin-bottom:1.3rem; }}
   .hero-icon {{ font-size:2.6rem; line-height:1; padding:0.7rem; border-radius:16px;
-                background: rgba(90,160,255,0.12); border:1px solid rgba(110,170,255,0.4); }}
+                background: rgba(255,255,255,0.18); border:1px solid rgba(255,255,255,0.45); }}
   .hero h1 {{ font-size:2.1rem; margin:0 0 0.35rem 0; padding:0; color:#fff; font-weight:800; }}
-  .hero p {{ color:{INK_2}; font-size:1.02rem; margin:0 0 0.9rem 0; max-width:60rem; }}
+  .hero p {{ color:rgba(255,255,255,0.92); font-size:1.02rem; margin:0 0 0.9rem 0; max-width:60rem; }}
   .chip {{ display:inline-block; font-size:0.8rem; padding:0.28rem 0.7rem; margin:0 0.4rem 0.4rem 0;
-           border-radius:999px; border:1px solid rgba(120,170,240,0.45); color:{INK}; background:rgba(20,50,100,0.55);
+           border-radius:999px; border:1px solid rgba(255,255,255,0.5); color:#fff; background:rgba(255,255,255,0.14);
            text-decoration:none !important; }}
-  .chip.warn {{ border-color:rgba(255,200,80,0.7); color:#ffd479; background:rgba(90,70,10,0.45); }}
-  .chip a, a.chip {{ color:{INK} !important; }}
+  .chip.warn {{ border-color:#ffd479; color:#3d2c00; background:#ffd479; font-weight:600; }}
+  a.chip, a.chip:visited {{ color:#fff !important; }}
 
-  .kpi {{ position:relative; padding:1rem 1.1rem 0.8rem; border-radius:16px; height:100%;
-          background: linear-gradient(180deg, rgba(25,45,85,0.9) 0%, rgba(14,27,52,0.95) 100%);
-          border:1px solid rgba(110,160,240,0.28); border-top:3px solid var(--accent); min-height:178px; display:flex; flex-direction:column;
-          box-shadow: 0 8px 28px color-mix(in srgb, var(--accent) 22%, transparent); }}
+  .kpi {{ position:relative; padding:1rem 1.1rem 0.8rem; border-radius:16px; height:100%; min-height:178px;
+          display:flex; flex-direction:column; background:#ffffff;
+          border:1px solid rgba(20,40,80,0.10); border-top:4px solid var(--accent);
+          box-shadow: 0 6px 22px color-mix(in srgb, var(--accent) 18%, transparent); }}
   .kpi-label {{ font-size:0.72rem; letter-spacing:0.08em; text-transform:uppercase; color:{INK_2}; font-weight:700;
                 padding-right:1.6rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }}
   .kpi-icon {{ position:absolute; top:0.85rem; right:1rem; font-size:1.15rem; }}
-  .kpi-value {{ font-size:clamp(1.25rem, 1.9vw, 2rem); font-weight:800; color:#fff; margin:0.35rem 0 0.1rem;
+  .kpi-value {{ font-size:clamp(1.25rem, 1.9vw, 2rem); font-weight:800; color:{INK}; margin:0.35rem 0 0.1rem;
                 font-variant-numeric: tabular-nums; white-space:nowrap; }}
   .kpi-sub {{ font-size:0.8rem; color:{INK_3}; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }}
-  .kpi-foot {{ margin-top:auto !important; display:flex; justify-content:space-between; align-items:center; margin-top:0.6rem; gap:0.4rem; flex-wrap:wrap; }}
+  .kpi-foot {{ margin-top:auto !important; display:flex; justify-content:space-between; align-items:center;
+               gap:0.4rem; flex-wrap:wrap; padding-top:0.6rem; }}
   .kpi-foot svg {{ flex:1 1 60px; min-width:60px; max-width:110px; }}
   .pill {{ font-size:0.72rem; font-weight:700; padding:0.18rem 0.55rem; border-radius:999px; white-space:nowrap; }}
-  .pill.good {{ color:{GOOD}; background:rgba(62,207,142,0.14); border:1px solid rgba(62,207,142,0.4); }}
-  .pill.bad  {{ color:{BAD};  background:rgba(255,123,114,0.14); border:1px solid rgba(255,123,114,0.4); }}
-  .pill.flat {{ color:{INK_2}; background:rgba(170,190,220,0.12); border:1px solid rgba(170,190,220,0.3); }}
+  .pill.good {{ color:{GOOD}; background:rgba(26,127,55,0.10); border:1px solid rgba(26,127,55,0.35); }}
+  .pill.bad  {{ color:{BAD};  background:rgba(207,34,46,0.08); border:1px solid rgba(207,34,46,0.30); }}
+  .pill.flat {{ color:{INK_2}; background:rgba(80,90,110,0.08); border:1px solid rgba(80,90,110,0.25); }}
 
   .section {{ display:flex; align-items:center; gap:0.8rem; margin:0.6rem 0 0.2rem; }}
-  .section-num {{ font-size:0.85rem; font-weight:800; color:#0b1426; background:#6da7ec;
+  .section-num {{ font-size:0.85rem; font-weight:800; color:#fff; background:{PASS};
                   border-radius:8px; padding:0.25rem 0.55rem; }}
-  .section-title {{ font-size:1.55rem; font-weight:800; color:#fff; }}
+  .section-title {{ font-size:1.55rem; font-weight:800; color:{INK}; }}
   .section-sub {{ color:{INK_2}; margin:0 0 1rem 0; }}
 
   .insight {{ padding:1rem 1.15rem; border-radius:14px; height:100%;
-              background: linear-gradient(160deg, color-mix(in srgb, var(--accent) 16%, #14264a) 0%, rgba(16,30,58,0.9) 70%); border:1px solid rgba(110,160,240,0.25); border-left:4px solid var(--accent); }}
+              background: linear-gradient(160deg, color-mix(in srgb, var(--accent) 12%, #ffffff) 0%, #ffffff 75%);
+              border:1px solid rgba(20,40,80,0.10); border-left:5px solid var(--accent);
+              box-shadow: 0 4px 16px rgba(20,40,80,0.06); }}
   .insight-title {{ font-size:0.75rem; letter-spacing:0.1em; text-transform:uppercase; color:{INK_2}; font-weight:700; }}
-  .insight-big {{ font-size:1.6rem; font-weight:800; color:#fff; margin:0.25rem 0; }}
+  .insight-big {{ font-size:1.6rem; font-weight:800; color:{INK}; margin:0.25rem 0; }}
   .insight-text {{ color:{INK}; font-size:0.95rem; }}
 
-  [data-testid="stTabs"] button p {{ font-size:0.98rem; font-weight:600; color:{INK}; }}
-  /* Readable text even if the dark theme file is missing */
-  .stApp, .stApp p, .stApp label, .stApp li, .stApp h1, .stApp h2, .stApp h3, .stApp h4, .stApp h5,
-  [data-testid="stSidebar"] *, [data-testid="stWidgetLabel"] *, [data-testid="stMarkdownContainer"] {{ color:{INK}; }}
-  [data-testid="stCaptionContainer"], [data-testid="stCaptionContainer"] * {{ color:{INK_2} !important; }}
-  [data-testid="stSidebar"] [data-baseweb="select"] *, [data-testid="stSidebar"] [data-baseweb="tag"] * {{ color:#0b1426; }}
-  [data-testid="stSidebar"] [data-baseweb="tag"] {{ background:#6da7ec !important; }}
-  [data-testid="stSidebar"] button {{ background:#1c3a6e !important; border-color:#3987e5 !important; }}
-  [data-testid="stSidebar"] button * {{ color:#ffffff !important; }}
-  [data-testid="stVerticalBlockBorderWrapper"] {{ background: rgba(14,27,52,0.6); border-radius:14px; }}
+  [data-testid="stTabs"] button p {{ font-size:0.98rem; font-weight:600; }}
 </style>
 """,
     unsafe_allow_html=True,
@@ -124,16 +115,16 @@ def cond_share(s: pd.Series) -> float:
 
 def style(fig: go.Figure, height: int = 360) -> go.Figure:
     fig.update_layout(
-        template="plotly_dark",
+        template="plotly_white",
         paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
         font=dict(color=INK_2), height=height,
         margin=dict(l=8, r=8, t=8, b=8),
         legend=dict(orientation="h", yanchor="bottom", y=1.02, x=0, title=None, font=dict(color=INK)),
-        hoverlabel=dict(font_size=13, bgcolor="#13264a", bordercolor="#3987e5", font_color=INK),
+        hoverlabel=dict(font_size=13),
         bargap=0.25,
     )
-    fig.update_xaxes(showgrid=False, title=None, linecolor="rgba(170,190,220,0.25)")
-    fig.update_yaxes(gridcolor="rgba(170,190,220,0.10)", zeroline=False)
+    fig.update_xaxes(showgrid=False, title=None, linecolor="rgba(0,0,0,0.15)")
+    fig.update_yaxes(gridcolor="rgba(0,0,0,0.07)", zeroline=False)
     return fig
 
 
@@ -293,7 +284,7 @@ cards = [
     ("Fail rate", "⛔", f"{fail_rate:.1%}", "of inspections failed",
      yoy("fail", "points"), False, sparkline(by_year["fail"], FAIL), FAIL),
     ("Violations", "📋", "–" if pd.isna(avg_viol) else f"{avg_viol:.2f}", "avg per inspection",
-     yoy("viol", "abs"), False, sparkline(by_year["viol"], "#ffd479"), "#ffd479"),
+     yoy("viol", "abs"), False, sparkline(by_year["viol"], YELLOW), YELLOW),
 ]
 for col, c in zip(st.columns(5), cards):
     col.markdown(kpi_card(*c), unsafe_allow_html=True)
@@ -330,11 +321,11 @@ with tabs[0]:
     if {"Risk 1 (High)", "Risk 3 (Low)"} <= set(rk.index):
         hi, lo = rk["Risk 1 (High)"], rk["Risk 3 (Low)"]
         if lo > hi:
-            insights.append(("#ffd479", "⚠️ Surprise finding", "Low risk ≠ safe",
+            insights.append((YELLOW, "⚠️ Surprise finding", "Low risk ≠ safe",
                              f"Low-risk businesses fail <b>{lo:.0%}</b> of the time, more than high-risk ones "
                              f"(<b>{hi:.0%}</b>). Risk level reflects the food handled, not past performance."))
         else:
-            insights.append(("#ffd479", "⚠️ Risk level", f"{hi:.0%} vs {lo:.0%}",
+            insights.append((YELLOW, "⚠️ Risk level", f"{hi:.0%} vs {lo:.0%}",
                              "Fail rate for high-risk compared with low-risk businesses."))
     zp = rate_base.groupby("Zip")["Results"].agg(["size", fail_share])
     zp = zp[zp["size"] >= 300]
@@ -357,7 +348,7 @@ with tabs[0]:
                .agg(inspections="size", fail_rate=fail_share).reset_index())
     fig = px.area(monthly, x="Inspection Date", y="inspections", color_discrete_sequence=[PASS],
                   custom_data=["fail_rate"])
-    fig.update_traces(line_width=2, fillcolor="rgba(57,135,229,0.18)",
+    fig.update_traces(line_width=2, fillcolor="rgba(42,120,214,0.14)",
                       hovertemplate="%{x|%B %Y}: %{y:,} inspections, %{customdata[0]:.1%} failed<extra></extra>")
     fig.update_yaxes(title=None, tickformat=",", rangemode="tozero")
     st.plotly_chart(style(fig, 300), width="stretch")
@@ -389,7 +380,7 @@ with tabs[1]:
     mix["share"] = mix["count"] / mix.groupby("Year")["count"].transform("sum")
     fig = px.bar(mix, x="Year", y="share", color="Results", category_orders={"Results": INSPECTED},
                  color_discrete_map=RESULT_COLOURS, custom_data=["Results", "count"])
-    fig.update_traces(marker_line_width=1, marker_line_color="#0b1426",
+    fig.update_traces(marker_line_width=1, marker_line_color="#ffffff",
                       hovertemplate="%{x} · %{customdata[0]}: %{y:.1%} (%{customdata[1]:,})<extra></extra>")
     fig.update_layout(barmode="stack")
     fig.update_yaxes(title=None, tickformat=".0%")
@@ -436,7 +427,7 @@ with tabs[3]:
                  category_orders={"Results": INSPECTED, "Risk": RISK_ORDER},
                  color_discrete_map=RESULT_COLOURS, custom_data=["Results", "count"], text="share")
     fig.update_traces(texttemplate="%{x:.0%}", textposition="inside", insidetextanchor="middle",
-                      textfont_color="#ffffff", marker_line_width=1, marker_line_color="#0b1426",
+                      textfont_color="#ffffff", marker_line_width=1, marker_line_color="#ffffff",
                       hovertemplate="%{y} · %{customdata[0]}: %{x:.1%} (%{customdata[1]:,})<extra></extra>")
     fig.update_layout(barmode="stack")
     fig.update_xaxes(tickformat=".0%")
@@ -464,7 +455,7 @@ with tabs[4]:
         grid = (m.assign(lat=(m["Latitude"] / 0.01).round() * 0.01, lon=(m["Longitude"] / 0.01).round() * 0.01)
                 .groupby(["lat", "lon"]).size().reset_index(name="count"))
         fig = px.scatter_map(grid, lat="lat", lon="lon", color="count", size="count", size_max=18,
-                             color_continuous_scale=SEQ_BLUE[::-1], center=dict(lat=41.84, lon=-87.68),
+                             color_continuous_scale=SEQ_BLUE, center=dict(lat=41.84, lon=-87.68),
                              zoom=9.4, map_style=MAP_STYLE, opacity=0.85)
         fig.update_traces(hovertemplate="%{marker.color:,} inspections in this area<extra></extra>")
         fig.update_layout(height=620, margin=dict(l=0, r=0, t=0, b=0), paper_bgcolor="rgba(0,0,0,0)",
