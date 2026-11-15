@@ -32,7 +32,7 @@ SEQ_BLUE = ["#86b6ef", "#3987e5", "#1c5cab", "#0d366b"]
 st.markdown(
     f"""
 <style>
-  .block-container {{ padding-top: 2.2rem; max-width: 1400px; }}
+  .block-container {{ padding-top: 4rem; max-width: 1400px; }}
 
   .hero {{ display:flex; gap:1.4rem; align-items:flex-start; padding:1.6rem 1.8rem; border-radius:18px;
            background: linear-gradient(135deg, #1c5cab 0%, #2a78d6 55%, #3f8ee8 100%);
