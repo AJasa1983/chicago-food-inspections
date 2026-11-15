@@ -52,13 +52,15 @@ st.markdown(
 
   .kpi {{ position:relative; padding:1rem 1.1rem 0.8rem; border-radius:16px; height:100%;
           background: linear-gradient(180deg, rgba(25,45,85,0.9) 0%, rgba(14,27,52,0.95) 100%);
-          border:1px solid rgba(110,160,240,0.28); border-top:3px solid var(--accent); min-height:178px;
+          border:1px solid rgba(110,160,240,0.28); border-top:3px solid var(--accent); min-height:178px; display:flex; flex-direction:column;
           box-shadow: 0 8px 28px color-mix(in srgb, var(--accent) 22%, transparent); }}
-  .kpi-label {{ font-size:0.72rem; letter-spacing:0.1em; text-transform:uppercase; color:{INK_2}; font-weight:700; }}
+  .kpi-label {{ font-size:0.72rem; letter-spacing:0.08em; text-transform:uppercase; color:{INK_2}; font-weight:700;
+                padding-right:1.6rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }}
   .kpi-icon {{ position:absolute; top:0.85rem; right:1rem; font-size:1.15rem; }}
-  .kpi-value {{ font-size:2rem; font-weight:800; color:#fff; margin:0.35rem 0 0.1rem; font-variant-numeric: tabular-nums; }}
-  .kpi-sub {{ font-size:0.8rem; color:{INK_3}; }}
-  .kpi-foot {{ display:flex; justify-content:space-between; align-items:center; margin-top:0.6rem; gap:0.4rem; flex-wrap:wrap; }}
+  .kpi-value {{ font-size:clamp(1.25rem, 1.9vw, 2rem); font-weight:800; color:#fff; margin:0.35rem 0 0.1rem;
+                font-variant-numeric: tabular-nums; white-space:nowrap; }}
+  .kpi-sub {{ font-size:0.8rem; color:{INK_3}; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }}
+  .kpi-foot {{ margin-top:auto !important; display:flex; justify-content:space-between; align-items:center; margin-top:0.6rem; gap:0.4rem; flex-wrap:wrap; }}
   .kpi-foot svg {{ flex:1 1 60px; min-width:60px; max-width:110px; }}
   .pill {{ font-size:0.72rem; font-weight:700; padding:0.18rem 0.55rem; border-radius:999px; white-space:nowrap; }}
   .pill.good {{ color:{GOOD}; background:rgba(62,207,142,0.14); border:1px solid rgba(62,207,142,0.4); }}
@@ -77,7 +79,15 @@ st.markdown(
   .insight-big {{ font-size:1.6rem; font-weight:800; color:#fff; margin:0.25rem 0; }}
   .insight-text {{ color:{INK}; font-size:0.95rem; }}
 
-  [data-testid="stTabs"] button p {{ font-size:0.98rem; font-weight:600; }}
+  [data-testid="stTabs"] button p {{ font-size:0.98rem; font-weight:600; color:{INK}; }}
+  /* Readable text even if the dark theme file is missing */
+  .stApp, .stApp p, .stApp label, .stApp li, .stApp h1, .stApp h2, .stApp h3, .stApp h4, .stApp h5,
+  [data-testid="stSidebar"] *, [data-testid="stWidgetLabel"] *, [data-testid="stMarkdownContainer"] {{ color:{INK}; }}
+  [data-testid="stCaptionContainer"], [data-testid="stCaptionContainer"] * {{ color:{INK_2} !important; }}
+  [data-testid="stSidebar"] [data-baseweb="select"] *, [data-testid="stSidebar"] [data-baseweb="tag"] * {{ color:#0b1426; }}
+  [data-testid="stSidebar"] [data-baseweb="tag"] {{ background:#6da7ec !important; }}
+  [data-testid="stSidebar"] button {{ background:#1c3a6e !important; border-color:#3987e5 !important; }}
+  [data-testid="stSidebar"] button * {{ color:#ffffff !important; }}
   [data-testid="stVerticalBlockBorderWrapper"] {{ background: rgba(14,27,52,0.6); border-radius:14px; }}
 </style>
 """,
@@ -276,17 +286,18 @@ def yoy(col: str, kind: str):
 cards = [
     ("Inspections", "🔍", f"{n:,}", f"{rate_base['DBA Name'].nunique():,} businesses",
      yoy("n", "pct_change"), True, sparkline(by_year["n"], PASS), PASS),
-    ("Pass rate", "✅", f"{pass_rate:.1%}", "clean pass, no conditions",
+    ("Pass rate", "✅", f"{pass_rate:.1%}", "clean pass",
      yoy("pass_", "points"), True, sparkline(by_year["pass_"], PASS), PASS),
-    ("With conditions", "🛠️", f"{cond_rate:.1%}", "fixed on the spot",
+    ("Conditional", "🛠️", f"{cond_rate:.1%}", "fixed on the spot",
      yoy("cond", "points"), False, sparkline(by_year["cond"], CONDITIONS), CONDITIONS),
     ("Fail rate", "⛔", f"{fail_rate:.1%}", "of inspections failed",
      yoy("fail", "points"), False, sparkline(by_year["fail"], FAIL), FAIL),
-    ("Avg violations", "📋", "–" if pd.isna(avg_viol) else f"{avg_viol:.2f}", "per inspection",
+    ("Violations", "📋", "–" if pd.isna(avg_viol) else f"{avg_viol:.2f}", "avg per inspection",
      yoy("viol", "abs"), False, sparkline(by_year["viol"], "#ffd479"), "#ffd479"),
 ]
 for col, c in zip(st.columns(5), cards):
     col.markdown(kpi_card(*c), unsafe_allow_html=True)
+st.write("")
 
 note = "Change pills compare the last two full years in your selection; mini lines show the yearly trend."
 if not ss.visits:
